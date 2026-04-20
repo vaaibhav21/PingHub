@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Rooms</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+
+<div class="background-shape shape-one"></div>
+<div class="background-shape shape-two"></div>
+
+<div class="page-container">
+
+    <div class="top-bar">
+        <div class="brand-section">
+            <div class="brand-badge">💬</div>
+            <div>
+                <h1>Chat Rooms</h1>
+                <p class="subtitle">Connect, create rooms, and start conversations instantly</p>
+            </div>
+        </div>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="welcome-card">
+        <div class="welcome-left">
+            <p class="welcome-label">WELCOME BACK</p>
+            <h2>
+                Hello,
+                <span th:text="${user != null ? user.username : 'Guest'}">User</span> 👋
+            </h2>
+            <p class="welcome-text">Choose a room and continue your conversations in a smooth, modern chat space.</p>
+        </div>
+        <div class="welcome-icon">🚀</div>
+    </div>
+
+    <div class="content-grid">
+
+        <div class="card profile-card">
+            <div class="card-header">
+                <span class="card-icon">👤</span>
+                <h3>Your Profile</h3>
+            </div>
+
+            <div class="profile-box">
+                <p class="profile-title">Logged in as</p>
+                <h4 th:text="${user != null ? user.username : 'Guest'}">User</h4>
+                <p class="profile-text">You can create rooms, enter shared rooms, and chat with others using the same application.</p>
+            </div>
+        </div>
+
+        <div class="card profile-card" th:if="${!#lists.isEmpty(friendRequests) or unreadCount > 0}">
+            <div class="card-header">
+                <span class="card-icon">🔔</span>
+                <h3>Notifications & Requests</h3>
+            </div>
+
+            <div class="profile-box">
+                <div th:if="${unreadCount > 0}">
+                    <p style="color: #dc2626; font-weight: bold; margin-bottom: 10px;">You have <span th:text="${unreadCount}"></span> unread notifications!</p>
+                    <form action="/notifications/markRead" method="post">
+                        <button type="submit" style="padding: 5px 10px; border-radius: 5px; border:none; background:#e2e8f0; cursor:pointer; margin-bottom: 15px;">Mark All Read</button>
+                    </form>
+                </div>
+                
+                <div th:each="req : ${friendRequests}" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <div>
+                        <strong><span th:text="${req.requester.username}"></span></strong> sent you a friend request.
+                    </div>
+                    <form th:action="@{'/friends/accept/' + ${req.id}}" method="post">
+                        <button type="submit" style="padding: 6px 12px; background: #10b981; color: white; border:none; border-radius: 5px; cursor:pointer;">Accept</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rooms-card">
+            <div class="card-header">
+                <span class="card-icon">🗂️</span>
+                <h3>Available Rooms</h3>
+            </div>
+
+            <div class="room-list">
+
+                <div th:each="room : ${rooms}" class="room-row">
+
+                    <a th:href="@{'/room/' + ${room.id}}" class="room-item">
+                        <div class="room-item-left">
+                            <div class="room-avatar">#</div>
+                            <div>
+                                <span class="room-name" th:text="${room.roomName}">Room Name</span>
+                                <span th:if="${user != null and user.role == 'ADMIN'}" class="room-key-badge" style="font-size: 0.8em; background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 8px; color: #475569; font-weight: bold;" th:text="'Key: ' + ${room.accessKey}">Key</span>
+                                <p class="room-subtext">Tap to enter chat room</p>
+                            </div>
+                        </div>
+                        <span class="room-arrow">→</span>
+                    </a>
+
+                    <form th:action="@{'/deleteRoom/' + ${room.id}}" method="post"
+                          onsubmit="return confirm('Delete this room and all messages?');"
+                          th:if="${user != null and user.role == 'ADMIN'}">
+                        <button type="submit" class="delete-room-btn">Delete</button>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card rooms-card">
+            <div class="card-header">
+                <span class="card-icon">💬</span>
+                <h3>Direct Messages</h3>
+            </div>
+            
+            <div class="room-list">
+                <div th:if="${friends == null or #lists.isEmpty(friends)}" class="room-row" style="justify-content:center; text-align:center; padding: 20px; color:#64748b; border:none; background:transparent;">
+                    No friends yet. Add friends below to start chatting!
+                </div>
+                <div th:each="friend : ${friends}" class="room-row">
+                    <a th:href="@{'/direct/' + ${friend.id}}" class="room-item">
+                        <div class="room-item-left">
+                            <div class="room-avatar">👤</div>
+                            <div>
+                                <span class="room-name" th:text="${friend.username}">User Name</span>
+                                <p class="room-subtext">Tap to message privately</p>
+                            </div>
+                        </div>
+                        <span class="room-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card rooms-card">
+            <div class="card-header">
+                <span class="card-icon">🤝</span>
+                <h3>Add Friends</h3>
+            </div>
+            
+            <div class="room-list">
+                <div th:each="otherUser : ${otherUsers}" class="room-row">
+                    <div class="room-item">
+                        <div class="room-item-left">
+                            <div class="room-avatar">👥</div>
+                            <div>
+                                <span class="room-name" th:text="${otherUser.username}">User Name</span>
+                                <p class="room-subtext" th:text="${otherUser.email}"></p>
+                            </div>
+                        </div>
+                        <form th:action="@{'/friends/add/' + ${otherUser.id}}" method="post">
+                            <button type="submit" class="delete-room-btn" style="background-color: #2563eb; color: white;">Add Friend</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card create-room-card" th:if="${user != null and user.role == 'ADMIN'}">
+        <div class="card-header">
+            <span class="card-icon">✨</span>
+            <h3>Create New Room</h3>
+        </div>
+
+        <p class="create-room-text">Start a fresh conversation space by creating a new room.</p>
+
+        <form action="/addRoom" method="post" class="add-room-form">
+            <input type="text" name="roomName" placeholder="Enter room name" required>
+            <button type="submit">Create Room</button>
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>

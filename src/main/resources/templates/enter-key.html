@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Room Key</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .enter-key-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            max-width: 400px;
+            margin: 100px auto;
+            text-align: center;
+        }
+
+        .enter-key-card h3 {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .enter-key-card p {
+            color: #64748b;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #475569;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            color: #ef4444;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="background-shape shape-one"></div>
+<div class="background-shape shape-two"></div>
+
+<div class="page-container">
+    <div class="enter-key-card">
+        <h3 th:text="${'Join ' + roomName}">Join Room</h3>
+        <p>This room is private. Please enter the access key to join.</p>
+
+        <div th:if="${error}" class="error-message" th:text="${error}"></div>
+
+        <form th:action="@{/room/join}" method="post">
+            <input type="hidden" name="roomId" th:value="${roomId}">
+            
+            <div class="form-group">
+                <label for="accessKey">Access Key</label>
+                <input type="text" id="accessKey" name="accessKey" placeholder="e.g. A1B2C3" required autocomplete="off">
+            </div>
+
+            <button type="submit" class="btn-submit">Join Room</button>
+        </form>
+
+        <a href="/" class="back-link">← Back to Rooms</a>
+    </div>
+</div>
+
+</body>
+</html>

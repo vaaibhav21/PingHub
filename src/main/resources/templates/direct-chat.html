@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${recipient.username}">Chat Room</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #eef6ff 40%, #ecfdf5 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #0f172a;
+        }
+
+        .chat-page {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .chat-shell {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(14px);
+            border-radius: 28px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 22px 26px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .chat-header-left h2 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .room-subtitle {
+            font-size: 14px;
+            opacity: 0.92;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            background: rgba(255,255,255,0.16);
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-weight: 700;
+        }
+
+        .chat-body {
+            min-height: 560px;
+            max-height: 560px;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .empty-state {
+            margin: auto;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .message-row {
+            display: flex;
+        }
+
+        .message-row.mine {
+            justify-content: flex-end;
+        }
+
+        .message-row.other {
+            justify-content: flex-start;
+        }
+
+        .message-card {
+            max-width: 380px;
+            border-radius: 20px;
+            padding: 12px 14px 10px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            position: relative;
+            cursor: context-menu;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .message-row.mine .message-card {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message-row.other .message-card {
+            background: white;
+            color: #0f172a;
+            border: 1px solid #dbeafe;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message-sender {
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            opacity: 0.92;
+        }
+
+        .message-row.other .message-sender {
+            color: #2563eb;
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .deleted-message {
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        .message-time {
+            margin-top: 8px;
+            font-size: 11px;
+            text-align: right;
+            opacity: 0.82;
+            font-weight: 600;
+        }
+
+        .message-status {
+            margin-top: 3px;
+            font-size: 10px;
+            text-align: right;
+            opacity: 0.85;
+            font-weight: 700;
+        }
+
+        .chat-image {
+            max-width: 100%;
+            width: 100%;
+            border-radius: 14px;
+            display: block;
+            cursor: pointer;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .file-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 14px;
+            margin-top: 4px;
+            text-decoration: none;
+            color: inherit;
+            background: rgba(255,255,255,0.14);
+        }
+
+        .message-row.other .file-card {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .file-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .file-action {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .chat-footer {
+            padding: 18px 22px 22px;
+            background: rgba(255,255,255,0.92);
+            border-top: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .tools-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .tool-btn,
+        .send-btn,
+        .record-btn {
+            border: none;
+            padding: 12px 18px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .tool-btn {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            min-width: 150px;
+        }
+
+        .record-btn {
+            background: #dc2626;
+            color: white;
+        }
+
+        .record-btn.recording {
+            background: #0f172a;
+        }
+
+        .emoji-panel {
+            display: none;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+        }
+
+        .emoji {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .recording-status {
+            display: none;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-form input[type="text"] {
+            flex: 1;
+            padding: 16px 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 18px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .context-menu {
+            position: fixed;
+            display: none;
+            z-index: 9999;
+            background: white;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+            min-width: 180px;
+            overflow: hidden;
+        }
+
+        .context-menu button {
+            width: 100%;
+            border: none;
+            background: white;
+            padding: 14px 16px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .context-menu button:hover {
+            background: #eff6ff;
+        }
+
+        .context-menu .danger {
+            color: #dc2626;
+        }
+
+        .image-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .image-modal img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-form {
+                flex-direction: column;
+            }
+
+            .send-btn {
+                width: 100%;
+            }
+
+            .message-card {
+                max-width: 88%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-page">
+    <div class="chat-shell">
+
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <h2 th:text="${recipient.username}">Chat Room</h2>
+                <p class="room-subtitle">User: <span th:text="${recipient.email}">email</span></p>
+            </div>
+            <a href="/" class="back-btn">← Back to Home</a>
+        </div>
+
+        <div class="chat-body" id="chatBody">
+
+            <div th:if="${#lists.isEmpty(messages)}" class="empty-state" id="emptyState">
+                <h3>No messages yet</h3>
+                <p>Start the conversation by sending the first message.</p>
+            </div>
+
+            <div th:each="m : ${messages}"
+                 th:class="${m.user != null and loggedInUser != null and m.user.id == loggedInUser.id} ? 'message-row mine' : 'message-row other'">
+
+                <div class="message-card"
+                     th:attr="data-message-id=${m.id},
+                              data-room-id=${recipient.id},
+                              data-deleted=${m.deleted},
+                              data-owner=${m.user != null and loggedInUser != null and m.user.id == loggedInUser.id}">
+
+                    <div class="message-sender"
+                         th:text="${m.user != null ? m.user.username : 'Unknown User'}">
+                        User
+                    </div>
+
+                    <div th:if="${m.deleted}" class="message-text deleted-message">
+                        This message was deleted
+                    </div>
+
+                    <div th:if="${!m.deleted}">
+                        <div th:if="${m.messageType == null or m.messageType == 'TEXT'}"
+                             class="message-text"
+                             th:text="${m.content}">
+                            Hello
+                        </div>
+
+                        <div th:if="${m.messageType == 'IMAGE'}">
+                            <img th:src="${m.fileUrl}"
+                                 alt="Image Message"
+                                 class="chat-image"
+                                 onclick="openImageModal(this.src)">
+                        </div>
+
+                        <div th:if="${m.messageType == 'AUDIO'}">
+                            <audio controls class="audio-player">
+                                <source th:src="${m.fileUrl}" th:type="${m.contentType}">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+
+                        <div th:if="${m.messageType == 'FILE'}">
+                            <a th:href="${m.fileUrl}" th:download="${m.fileName}" class="file-card">
+                                <div class="file-icon">📄</div>
+                                <div class="file-details">
+                                    <div class="file-name" th:text="${m.fileName}">document.pdf</div>
+                                    <div class="file-action">Tap to download</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="message-time"
+                         th:text="${m.sentAt != null ? #temporals.format(m.sentAt, 'dd MMM yyyy hh:mm a') : ''}">
+                        08 Apr 2026 10:30 AM
+                    </div>
+
+                    <div class="message-status"
+                         th:if="${m.user != null and loggedInUser != null and m.user.id == loggedInUser.id}"
+                         th:text="${m.status != null ? m.status : 'SENT'}">
+                        SENT
+                    </div>
+
+                    <!-- Emoji Reactions Display -->
+                    <div th:if="${!#lists.isEmpty(m.reactions)}" style="display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;">
+                        <span th:each="r : ${m.reactions}" 
+                              style="background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:12px; font-size:12px;"
+                              th:text="${r.emoji}"></span>
+                    </div>
+
+                    <!-- Add Reaction Form (Hover triggered ideally, but buttons for simplicity) -->
+                    <div style="margin-top: 6px; display:flex; gap:6px;">
+                        <form action="/reaction/toggle" method="post" style="display:inline;">
+                            <input type="hidden" name="messageId" th:value="${m.id}">
+                            <input type="hidden" name="emoji" value="👍">
+                            <button type="submit" style="background:none; border:none; cursor:pointer;" title="React 👍">👍</button>
+                        </form>
+                        <form action="/reaction/toggle" method="post" style="display:inline;">
+                            <input type="hidden" name="messageId" th:value="${m.id}">
+                            <input type="hidden" name="emoji" value="❤️">
+                            <button type="submit" style="background:none; border:none; cursor:pointer;" title="React ❤️">❤️</button>
+                        </form>
+                        <form action="/reaction/toggle" method="post" style="display:inline;">
+                            <input type="hidden" name="messageId" th:value="${m.id}">
+                            <input type="hidden" name="emoji" value="😂">
+                            <button type="submit" style="background:none; border:none; cursor:pointer;" title="React 😂">😂</button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+
+            <div class="tools-row">
+                <button type="button" class="tool-btn" onclick="toggleEmojiPanel()">😊 Emoji</button>
+
+                <form class="media-upload-form" action="/send-media-direct" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="recipientId" th:value="${recipient.id}">
+                    <label for="imageUpload" class="tool-btn" style="display:inline-block; cursor:pointer;">📸 Photo</label>
+                    <input type="file" id="imageUpload" name="file" accept="image/*" hidden onchange="this.form.requestSubmit()">
+                </form>
+
+                <form class="media-upload-form" action="/send-media-direct" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="recipientId" th:value="${recipient.id}">
+                    <label for="fileUpload" class="tool-btn" style="display:inline-block; cursor:pointer;">📁 Upload File</label>
+                    <input type="file" id="fileUpload" name="file" hidden onchange="this.form.requestSubmit()">
+                </form>
+
+                <button type="button" id="recordToggleBtn" class="record-btn">🎤 Start Voice Message</button>
+            </div>
+
+            <div id="recordingStatus" class="recording-status">
+                Recording... click the same button again to stop and send.
+            </div>
+
+            <div id="emojiPanel" class="emoji-panel">
+                <span class="emoji" onclick="addEmoji('😀')">😀</span>
+                <span class="emoji" onclick="addEmoji('😂')">😂</span>
+                <span class="emoji" onclick="addEmoji('😍')">😍</span>
+                <span class="emoji" onclick="addEmoji('😎')">😎</span>
+                <span class="emoji" onclick="addEmoji('👍')">👍</span>
+                <span class="emoji" onclick="addEmoji('🔥')">🔥</span>
+                <span class="emoji" onclick="addEmoji('❤️')">❤️</span>
+                <span class="emoji" onclick="addEmoji('🎉')">🎉</span>
+                <span class="emoji" onclick="addEmoji('🙏')">🙏</span>
+                <span class="emoji" onclick="addEmoji('💯')">💯</span>
+            </div>
+
+            <form action="/send-direct" method="post" class="chat-form">
+                <input type="text" id="messageInput" name="content" placeholder="Type your message here..." required>
+                <input type="hidden" name="recipientId" th:value="${recipient.id}">
+                <button type="submit" class="send-btn">Send Message</button>
+            </form>
+
+            <form id="audioUploadForm" class="media-upload-form" action="/send-media-direct" method="post" enctype="multipart/form-data" style="display:none;">
+                <input type="hidden" name="recipientId" th:value="${recipient.id}">
+                <input type="file" id="audioFileInput" name="file">
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="contextMenu" class="context-menu">
+    <button id="deleteMessageBtn" class="danger">Delete Message</button>
+    <button id="permanentDeleteBtn" class="danger">Delete Permanently</button>
+</div>
+
+<form id="softDeleteForm" method="post" style="display:none;">
+    <input type="hidden" name="recipientId" id="softDeleteRoomId">
+</form>
+
+<form id="permanentDeleteForm" method="post" style="display:none;">
+    <input type="hidden" name="recipientId" id="permanentDeleteRoomId">
+</form>
+
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <img id="modalImage" src="" alt="Preview">
+</div>
+
+<script>
+    const chatBody = document.getElementById("chatBody");
+    if (chatBody) {
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function toggleEmojiPanel() {
+        const panel = document.getElementById("emojiPanel");
+        panel.style.display = panel.style.display === "flex" ? "none" : "flex";
+    }
+
+    function addEmoji(emoji) {
+        const input = document.getElementById("messageInput");
+        input.value += emoji;
+        input.focus();
+    }
+
+    function openImageModal(src) {
+        document.getElementById("modalImage").src = src;
+        document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeImageModal() {
+        document.getElementById("imageModal").style.display = "none";
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    const contextMenu = document.getElementById("contextMenu");
+    const deleteMessageBtn = document.getElementById("deleteMessageBtn");
+    const permanentDeleteBtn = document.getElementById("permanentDeleteBtn");
+
+    let selectedMessageId = null;
+    let selectedRoomId = null;
+    let selectedDeleted = false;
+    let selectedOwner = false;
+
+    function bindContextMenuToCards() {
+        document.querySelectorAll(".message-card").forEach(card => {
+            if (card.dataset.bound === "true") {
+                return;
+            }
+
+            card.dataset.bound = "true";
+
+            card.addEventListener("contextmenu", function(event) {
+                event.preventDefault();
+
+                selectedMessageId = this.dataset.messageId;
+                selectedRoomId = this.dataset.roomId;
+                selectedDeleted = this.dataset.deleted === "true";
+                selectedOwner = this.dataset.owner === "true";
+
+                if (!selectedOwner) {
+                    return;
+                }
+
+                contextMenu.style.display = "block";
+                contextMenu.style.left = event.pageX + "px";
+                contextMenu.style.top = event.pageY + "px";
+
+                if (selectedDeleted) {
+                    deleteMessageBtn.style.display = "none";
+                    permanentDeleteBtn.style.display = "block";
+                } else {
+                    deleteMessageBtn.style.display = "block";
+                    permanentDeleteBtn.style.display = "none";
+                }
+            });
+        });
+    }
+
+    bindContextMenuToCards();
+
+    document.addEventListener("click", function(event) {
+        if (!contextMenu.contains(event.target)) {
+            contextMenu.style.display = "none";
+        }
+    });
+
+    deleteMessageBtn.addEventListener("click", function() {
+        if (!selectedMessageId || !selectedRoomId) return;
+
+        const form = document.getElementById("softDeleteForm");
+        document.getElementById("softDeleteRoomId").value = selectedRoomId;
+        form.action = "/message/delete/" + selectedMessageId;
+        form.submit();
+    });
+
+    permanentDeleteBtn.addEventListener("click", function() {
+        if (!selectedMessageId || !selectedRoomId) return;
+
+        const form = document.getElementById("permanentDeleteForm");
+        document.getElementById("permanentDeleteRoomId").value = selectedRoomId;
+        form.action = "/message/permanent-delete/" + selectedMessageId;
+        form.submit();
+    });
+
+    function removeEmptyState() {
+        const emptyState = document.getElementById("emptyState");
+        if (emptyState) {
+            emptyState.remove();
+        }
+    }
+
+    function appendMyMediaMessage(data) {
+        removeEmptyState();
+
+        let mediaContent = "";
+
+        if (data.messageType === "IMAGE") {
+            mediaContent = `
+                <div>
+                    <img src="${data.fileUrl}" alt="Image Message" class="chat-image" onclick="openImageModal(this.src)">
+                </div>
+            `;
+        } else if (data.messageType === "AUDIO") {
+            mediaContent = `
+                <div>
+                    <audio controls class="audio-player">
+                        <source src="${data.fileUrl}" type="${data.contentType || 'audio/webm'}">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            `;
+        } else {
+            mediaContent = `
+                <div>
+                    <a href="${data.fileUrl}" download="${escapeHtml(data.fileName)}" class="file-card">
+                        <div class="file-icon">📄</div>
+                        <div class="file-details">
+                            <div class="file-name">${escapeHtml(data.fileName)}</div>
+                            <div class="file-action">Tap to download</div>
+                        </div>
+                    </a>
+                </div>
+            `;
+        }
+
+        const html = `
+            <div class="message-row mine">
+                <div class="message-card"
+                     data-message-id="${data.id}"
+                     data-room-id="${data.recipientId}"
+                     data-deleted="false"
+                     data-owner="true">
+
+                    <div class="message-sender">${escapeHtml(data.username)}</div>
+
+                    ${mediaContent}
+
+                    <div class="message-time">${escapeHtml(data.sentAt)}</div>
+                    <div class="message-status">${escapeHtml(data.status || 'SENT')}</div>
+                </div>
+            </div>
+        `;
+
+        chatBody.insertAdjacentHTML("beforeend", html);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        bindContextMenuToCards();
+    }
+
+    async function uploadMediaForm(form) {
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch("/send-media-direct", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                appendMyMediaMessage(data);
+
+                const fileInput = form.querySelector('input[type="file"]');
+                if (fileInput) {
+                    fileInput.value = "";
+                }
+            } else {
+                alert(data.message || "Upload failed");
+            }
+        } catch (error) {
+            alert("Upload failed. Please try again.");
+        }
+    }
+
+    document.querySelectorAll(".media-upload-form").forEach(form => {
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            uploadMediaForm(form);
+        });
+    });
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingStream = null;
+    let isRecording = false;
+
+    const recordToggleBtn = document.getElementById("recordToggleBtn");
+    const audioFileInput = document.getElementById("audioFileInput");
+    const audioUploadForm = document.getElementById("audioUploadForm");
+    const recordingStatus = document.getElementById("recordingStatus");
+
+    async function startRecording() {
+        try {
+            recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(recordingStream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                const audioFile = new File([audioBlob], "voice-message.webm", { type: "audio/webm" });
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(audioFile);
+                audioFileInput.files = dataTransfer.files;
+
+                if (recordingStream) {
+                    recordingStream.getTracks().forEach(track => track.stop());
+                }
+
+                audioUploadForm.requestSubmit();
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordToggleBtn.textContent = "⏹ Stop & Send Voice";
+            recordToggleBtn.classList.add("recording");
+            recordingStatus.style.display = "block";
+
+        } catch (error) {
+            alert("Microphone access denied or not supported in this browser.");
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+        }
+
+        isRecording = false;
+        recordToggleBtn.textContent = "🎤 Start Voice Message";
+        recordToggleBtn.classList.remove("recording");
+        recordingStatus.style.display = "none";
+    }
+
+    if (recordToggleBtn) {
+        recordToggleBtn.addEventListener("click", async function() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
