@@ -18,7 +18,6 @@ public class MessageService {
     @Autowired
     private MessageRepository messageRepository;
 
-    // ================= GET MESSAGES (FIXED ORDERING) =================
 
     public List<Message> getMessagesByRoom(Long roomId) {
         return messageRepository.findByRoomIdOrderBySentAtAsc(roomId);

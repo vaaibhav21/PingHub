@@ -13,7 +13,7 @@ public class MessageEncryptionConverter implements AttributeConverter<String, St
     // 32-byte key for AES-256
     private static final String SECRET_KEY = "MySuP3rS3cr3tK3y1234567890123456";
     private static final String ALGORITHM = "AES/ECB/PKCS5Padding";
-
+    
     @Override
     public String convertToDatabaseColumn(String attribute) {
         if (attribute == null) {

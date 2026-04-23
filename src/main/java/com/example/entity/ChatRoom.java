@@ -24,8 +24,6 @@ public class ChatRoom {
     )
     private Set<User> accessedUsers = new HashSet<>();
 
-    // ===== GETTERS & SETTERS =====
-
     public Long getId() {
         return id;
     }
